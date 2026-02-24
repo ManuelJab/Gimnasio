@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gimnasio_app
+    ports:
+      - "8080:8080"
+    environment:
+      # Sobrescribimos la configuración para apuntar al contenedor PostgreSQL local (por si lo pruebas luego)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/gimnasio
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - gimnasio-net
+
+  db:
+    image: postgres:15-alpine
+    container_name: gimnasio_db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=gimnasio
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d gimnasio" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gimnasio-net
+
+volumes:
+  postgres_data:
+
+
+networks:
+  gimnasio-net:
